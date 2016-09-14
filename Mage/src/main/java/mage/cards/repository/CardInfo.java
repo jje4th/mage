@@ -36,10 +36,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import mage.cards.FrameStyle;
 import mage.constants.CardType;
 import mage.constants.Rarity;
 import mage.ObjectColor;
+import mage.abilities.Ability;
 import mage.abilities.SpellAbility;
+import mage.abilities.common.PlanswalkerEntersWithLoyalityCountersAbility;
 import mage.cards.Card;
 import mage.cards.CardImpl;
 import mage.cards.mock.MockCard;
@@ -70,6 +73,8 @@ public class CardInfo {
     @DatabaseField
     protected String toughness;
     @DatabaseField
+    protected String startingLoyalty;
+    @DatabaseField
     protected int convertedManaCost;
     @DatabaseField(dataType = DataType.ENUM_STRING)
     protected Rarity rarity;
@@ -93,6 +98,10 @@ public class CardInfo {
     protected boolean red;
     @DatabaseField
     protected boolean white;
+    @DatabaseField
+    protected String frameColor;
+    @DatabaseField
+    protected String frameStyle;
     @DatabaseField
     protected boolean splitCard;
     @DatabaseField
@@ -132,6 +141,8 @@ public class CardInfo {
             this.secondSideName = secondSide.getName();
         }
 
+        this.frameStyle = card.getFrameStyle().toString();
+        this.frameColor = card.getFrameColor(null).toString();
         this.blue = card.getColor(null).isBlue();
         this.black = card.getColor(null).isBlack();
         this.green = card.getColor(null).isGreen();
@@ -139,18 +150,18 @@ public class CardInfo {
         this.white = card.getColor(null).isWhite();
 
         this.setTypes(card.getCardType());
-        this.setSubtypes(card.getSubtype());
+        this.setSubtypes(card.getSubtype(null));
         this.setSuperTypes(card.getSupertype());
         this.setManaCosts(card.getManaCost().getSymbols());
 
         int length = 0;
-        for (String rule :card.getRules()) {
+        for (String rule: card.getRules()) {
             length += rule.length();
         }
         if (length > MAX_RULE_LENGTH) {
             length = 0;
             ArrayList<String> shortRules = new ArrayList<>();
-            for (String rule :card.getRules()) {
+            for (String rule: card.getRules()) {
                 if (length + rule.length() + 3 <= MAX_RULE_LENGTH) {
                     shortRules.add(rule);
                     length += rule.length() + 3;
@@ -172,6 +183,21 @@ public class CardInfo {
                 this.className = this.setCode + "." + this.name;
                 this.splitCardHalf = true;
             }
+        }
+        
+        // Starting loyalty
+        if (card.getCardType().contains(CardType.PLANESWALKER)) {
+            for (Ability ab: card.getAbilities()) {
+                if (ab instanceof PlanswalkerEntersWithLoyalityCountersAbility) {
+                    this.startingLoyalty = "" + ((PlanswalkerEntersWithLoyalityCountersAbility) ab).getStartingLoyalty();
+                }
+            }
+            if (this.startingLoyalty == null) {
+                //Logger.getLogger(CardInfo.class).warn("Planeswalker `" + card.getName() + "` missing starting loyalty");
+                this.startingLoyalty = "";
+            }
+        } else {
+            this.startingLoyalty = "";
         }
     }
 
@@ -199,6 +225,14 @@ public class CardInfo {
         color.setRed(red);
         color.setWhite(white);
         return color;
+    }
+    
+    public ObjectColor getFrameColor() {
+        return new ObjectColor(frameColor);
+    }
+
+    public FrameStyle getFrameStyle() {
+        return FrameStyle.valueOf(this.frameStyle);
     }
 
     private String joinList(List<String> items) {
@@ -285,6 +319,10 @@ public class CardInfo {
 
     public String getToughness() {
         return toughness;
+    }
+    
+    public String getStartingLoyalty() {
+        return startingLoyalty;
     }
 
     public String getSetCode() {

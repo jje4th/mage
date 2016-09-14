@@ -40,7 +40,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 import java.util.UUID;
@@ -51,6 +50,7 @@ import mage.abilities.ActivatedAbility;
 import mage.abilities.DelayedTriggeredAbility;
 import mage.abilities.SpellAbility;
 import mage.abilities.TriggeredAbility;
+import mage.abilities.common.AttachableToRestrictedAbility;
 import mage.abilities.common.ChancellorAbility;
 import mage.abilities.common.GemstoneCavernsAbility;
 import mage.abilities.effects.ContinuousEffect;
@@ -123,6 +123,7 @@ import mage.target.TargetPermanent;
 import mage.target.TargetPlayer;
 import mage.util.GameLog;
 import mage.util.MessageToClient;
+import mage.util.RandomUtil;
 import mage.util.functions.ApplyToPermanent;
 import mage.watchers.Watchers;
 import mage.watchers.common.BlockedAttackerWatcher;
@@ -158,7 +159,6 @@ public abstract class GameImpl implements Game, Serializable {
         FILTER_LEGENDARY.add(new SupertypePredicate("Legendary"));
     }
 
-    private static Random rnd = new Random();
 
     private transient Object customData;
     protected boolean simulation = false;
@@ -1009,9 +1009,7 @@ public abstract class GameImpl implements Game, Serializable {
         for (UUID playerId : state.getPlayerList(startingPlayerId)) {
             Player player = getPlayer(playerId);
             if (player != null && player.getHand().size() < startingHandSize) {
-                if (player.chooseUse(Outcome.Benefit, new MessageToClient("Scry 1?", "Look at the top card of your library. You may put that card on the bottom of your library."), null, this)) {
-                    player.scry(1, null, this);
-                }
+                player.scry(1, null, this);
             }
         }
         getState().setChoosingPlayerId(null);
@@ -1097,7 +1095,7 @@ public abstract class GameImpl implements Game, Serializable {
         UUID[] players = getPlayers().keySet().toArray(new UUID[0]);
         UUID playerId;
         while (!hasEnded()) {
-            playerId = players[rnd.nextInt(players.length)];
+            playerId = players[RandomUtil.nextInt(players.length)];
             Player player = getPlayer(playerId);
             if (player != null && player.isInGame()) {
                 fireInformEvent(state.getPlayer(playerId).getLogName() + " won the toss");
@@ -1722,7 +1720,7 @@ public abstract class GameImpl implements Game, Serializable {
             }
             if (perm.getCardType().contains(CardType.PLANESWALKER)) {
                 //20091005 - 704.5i
-                if (perm.getCounters().getCount(CounterType.LOYALTY) == 0) {
+                if (perm.getCounters(this).getCount(CounterType.LOYALTY) == 0) {
                     if (movePermanentToGraveyardWithInfo(perm)) {
                         somethingHappened = true;
                         continue;
@@ -1775,12 +1773,12 @@ public abstract class GameImpl implements Game, Serializable {
                                 Filter auraFilter = spellAbility.getTargets().get(0).getFilter();
                                 if (auraFilter instanceof FilterControlledCreaturePermanent) {
                                     if (!((FilterControlledCreaturePermanent) auraFilter).match(attachedTo, perm.getId(), perm.getControllerId(), this)
-                                            || attachedTo.cantBeEnchantedBy(perm, this)) {
+                                            || attachedTo.cantBeAttachedBy(perm, this)) {
                                         if (movePermanentToGraveyardWithInfo(perm)) {
                                             somethingHappened = true;
                                         }
                                     }
-                                } else if (!auraFilter.match(attachedTo, this) || attachedTo.cantBeEnchantedBy(perm, this)) {
+                                } else if (!auraFilter.match(attachedTo, this) || attachedTo.cantBeAttachedBy(perm, this)) {
                                     // handle bestow unattachment
                                     Card card = this.getCard(perm.getId());
                                     if (card != null && card.getCardType().contains(CardType.CREATURE)) {
@@ -1816,13 +1814,23 @@ public abstract class GameImpl implements Game, Serializable {
             if (FILTER_EQUIPMENT.match(perm, this)) {
                 //20091005 - 704.5p, 702.14d
                 if (perm.getAttachedTo() != null) {
-                    Permanent creature = getPermanent(perm.getAttachedTo());
-                    if (creature == null || !creature.getAttachments().contains(perm.getId())) {
+                    Permanent attachedTo = getPermanent(perm.getAttachedTo());
+                    if (attachedTo != null) {
+                        for (Ability ability : perm.getAbilities(this)) {
+                            if (ability instanceof AttachableToRestrictedAbility) {
+                                if (!((AttachableToRestrictedAbility) ability).canEquip(attachedTo, null, this)) {
+                                    attachedTo = null;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (attachedTo == null || !attachedTo.getAttachments().contains(perm.getId())) {
                         UUID wasAttachedTo = perm.getAttachedTo();
                         perm.attachTo(null, this);
                         fireEvent(new GameEvent(GameEvent.EventType.UNATTACHED, wasAttachedTo, perm.getId(), perm.getControllerId()));
-                    } else if (!creature.getCardType().contains(CardType.CREATURE) || creature.hasProtectionFrom(perm, this)) {
-                        if (creature.removeAttachment(perm.getId(), this)) {
+                    } else if (!attachedTo.getCardType().contains(CardType.CREATURE) || attachedTo.hasProtectionFrom(perm, this)) {
+                        if (attachedTo.removeAttachment(perm.getId(), this)) {
                             somethingHappened = true;
                         }
                     }
@@ -1848,9 +1856,9 @@ public abstract class GameImpl implements Game, Serializable {
                     Permanent attachment = getPermanent(attachmentId);
                     if (attachment != null
                             && (attachment.getCardType().contains(CardType.CREATURE)
-                            || !(attachment.getSubtype().contains("Aura")
-                            || attachment.getSubtype().contains("Equipment")
-                            || attachment.getSubtype().contains("Fortification")))) {
+                            || !(attachment.getSubtype(this).contains("Aura")
+                            || attachment.getSubtype(this).contains("Equipment")
+                            || attachment.getSubtype(this).contains("Fortification")))) {
                         if (perm.removeAttachment(attachment.getId(), this)) {
                             somethingHappened = true;
                             break;
@@ -1860,12 +1868,12 @@ public abstract class GameImpl implements Game, Serializable {
             }
 
             //20110501 - 704.5r
-            if (perm.getCounters().containsKey(CounterType.P1P1) && perm.getCounters().containsKey(CounterType.M1M1)) {
-                int p1p1 = perm.getCounters().getCount(CounterType.P1P1);
-                int m1m1 = perm.getCounters().getCount(CounterType.M1M1);
+            if (perm.getCounters(this).containsKey(CounterType.P1P1) && perm.getCounters(this).containsKey(CounterType.M1M1)) {
+                int p1p1 = perm.getCounters(this).getCount(CounterType.P1P1);
+                int m1m1 = perm.getCounters(this).getCount(CounterType.M1M1);
                 int min = Math.min(p1p1, m1m1);
-                perm.getCounters().removeCounter(CounterType.P1P1, min);
-                perm.getCounters().removeCounter(CounterType.M1M1, min);
+                perm.getCounters(this).removeCounter(CounterType.P1P1, min);
+                perm.getCounters(this).removeCounter(CounterType.M1M1, min);
             }
 
         }
@@ -1875,7 +1883,7 @@ public abstract class GameImpl implements Game, Serializable {
         // This is called the "planeswalker uniqueness rule."
         if (planeswalkers.size() > 1) {  //don't bother checking if less than 2 planeswalkers in play
             for (Permanent planeswalker : planeswalkers) {
-                for (String planeswalkertype : planeswalker.getSubtype()) {
+                for (String planeswalkertype : planeswalker.getSubtype(this)) {
                     FilterPlaneswalkerPermanent filterPlaneswalker = new FilterPlaneswalkerPermanent();
                     filterPlaneswalker.add(new SubtypePredicate(planeswalkertype));
                     filterPlaneswalker.add(new ControllerIdPredicate(planeswalker.getControllerId()));

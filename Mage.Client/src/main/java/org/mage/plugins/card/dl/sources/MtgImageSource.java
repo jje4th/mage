@@ -54,6 +54,16 @@ public class MtgImageSource implements CardImageSource {
     public String getSourceName() {
         return "mtgimage.com";
     }
+    
+    @Override
+    public String getNextHttpImageUrl() {
+        return null;
+    }
+    
+    @Override
+    public String getFileForHttpImage(String httpImageUrl) {
+        return null;
+    }
 
     @Override
     public String generateURL(CardDownloadData card) throws Exception {
@@ -94,5 +104,10 @@ public class MtgImageSource implements CardImageSource {
     @Override
     public Float getAverageSize() {
         return 70.0f;
+    }
+    
+    @Override
+    public Integer getTotalImages() {
+        return -1;
     }
 }

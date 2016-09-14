@@ -30,7 +30,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.mage.test.player.TestPlayer;
 import org.mage.test.serverside.base.CardTestAPI;
-import org.mage.test.serverside.base.CardTestAPI.GameResult;
 import org.mage.test.serverside.base.MageTestPlayerBase;
 
 /**
@@ -637,7 +636,7 @@ public abstract class CardTestPlayerAPIImpl extends MageTestPlayerBase implement
             }
         }
         Assert.assertNotNull("There is no such permanent " + (player == null ? "" : "for player " + player.getName()) + " on the battlefield, cardName=" + cardName, found);
-        Assert.assertEquals("(Battlefield) Counter counts are not equal (" + cardName + ":" + type + ")", count, found.getCounters().getCount(type));
+        Assert.assertEquals("(Battlefield) Counter counts are not equal (" + cardName + ":" + type + ")", count, found.getCounters(currentGame).getCount(type));
     }
 
     /**
@@ -716,7 +715,7 @@ public abstract class CardTestPlayerAPIImpl extends MageTestPlayerBase implement
 
         Assert.assertTrue("(Battlefield) card type not found (" + cardName + ":" + type + ")", found.getCardType().contains(type));
 
-        Assert.assertTrue("(Battlefield) card sub-type not equal (" + cardName + ":" + subType + ")", found.getSubtype().contains(subType));
+        Assert.assertTrue("(Battlefield) card sub-type not equal (" + cardName + ":" + subType + ")", found.getSubtype(currentGame).contains(subType));
     }
 
     /**

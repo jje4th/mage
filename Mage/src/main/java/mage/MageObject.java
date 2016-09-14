@@ -7,8 +7,10 @@ import mage.abilities.Abilities;
 import mage.abilities.Ability;
 import mage.abilities.costs.mana.ManaCost;
 import mage.abilities.costs.mana.ManaCosts;
+import mage.cards.FrameStyle;
 import mage.constants.CardType;
 import mage.game.Game;
+import mage.game.events.ZoneChangeEvent;
 
 public interface MageObject extends MageItem, Serializable {
 
@@ -24,9 +26,9 @@ public interface MageObject extends MageItem, Serializable {
 
     List<CardType> getCardType();
 
-    List<String> getSubtype();
+    List<String> getSubtype(Game game);
 
-    boolean hasSubtype(String subtype);
+    boolean hasSubtype(String subtype, Game game);
 
     List<String> getSupertype();
 
@@ -35,6 +37,10 @@ public interface MageObject extends MageItem, Serializable {
     boolean hasAbility(UUID abilityId, Game game);
 
     ObjectColor getColor(Game game);
+    
+    ObjectColor getFrameColor(Game game);
+    
+    FrameStyle getFrameStyle();
 
     ManaCosts<ManaCost> getManaCost();
 
@@ -43,6 +49,10 @@ public interface MageObject extends MageItem, Serializable {
     MageInt getPower();
 
     MageInt getToughness();
+    
+    int getStartingLoyalty();
+    
+    
 
     void adjustCosts(Ability ability, Game game);
 
@@ -66,7 +76,7 @@ public interface MageObject extends MageItem, Serializable {
 
     int getZoneChangeCounter(Game game);
 
-    void updateZoneChangeCounter(Game game);
+    void updateZoneChangeCounter(Game game, ZoneChangeEvent event);
 
     void setZoneChangeCounter(int value, Game game);
 

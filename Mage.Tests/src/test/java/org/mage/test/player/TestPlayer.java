@@ -104,7 +104,6 @@ import mage.target.common.TargetCardInYourGraveyard;
 import mage.target.common.TargetCreatureOrPlayer;
 import mage.target.common.TargetCreaturePermanentAmount;
 import mage.target.common.TargetPermanentOrPlayer;
-import mage.util.MessageToClient;
 import org.junit.Ignore;
 
 /**
@@ -976,12 +975,12 @@ public class TestPlayer implements Player {
 
     @Override
     public boolean chooseUse(Outcome outcome, String message, Ability source, Game game) {
-        return this.chooseUse(outcome, new MessageToClient(message), source, game);
+        return this.chooseUse(outcome, message, null, null, null, source, game);
     }
 
     @Override
-    public boolean chooseUse(Outcome outcome, MessageToClient message, Ability source, Game game) {
-        if (message.getMessage().equals("Scry 1?")) {
+    public boolean chooseUse(Outcome outcome, String message, String secondMessage, String trueText, String falseText, Ability source, Game game) {
+        if (message.equals("Scry 1?")) {
             return false;
         }
         if (!choices.isEmpty()) {
@@ -994,7 +993,7 @@ public class TestPlayer implements Player {
                 return true;
             }
         }
-        return computerPlayer.chooseUse(outcome, message, source, game);
+        return computerPlayer.chooseUse(outcome, message, secondMessage, trueText, falseText, source, game);
     }
 
     @Override
@@ -1239,8 +1238,8 @@ public class TestPlayer implements Player {
     }
 
     @Override
-    public boolean putInGraveyard(Card card, Game game, boolean fromBattlefield) {
-        return computerPlayer.putInGraveyard(card, game, fromBattlefield);
+    public boolean putInGraveyard(Card card, Game game) {
+        return computerPlayer.putInGraveyard(card, game);
     }
 
     @Override
@@ -1883,24 +1882,6 @@ public class TestPlayer implements Player {
     }
 
     @Override
-    @Deprecated
-    public boolean moveCards(Cards cards, Zone fromZone, Zone toZone, Ability source, Game game) {
-        return computerPlayer.moveCards(cards, fromZone, toZone, source, game);
-    }
-
-    @Override
-    @Deprecated
-    public boolean moveCards(Card card, Zone fromZone, Zone toZone, Ability source, Game game) {
-        return computerPlayer.moveCards(card, toZone, source, game);
-    }
-
-    @Override
-    @Deprecated
-    public boolean moveCards(Set<Card> cards, Zone toZone, Ability source, Game game) {
-        return computerPlayer.moveCards(cards, toZone, source, game);
-    }
-
-    @Override
     public boolean moveCardToHandWithInfo(Card card, UUID sourceId, Game game) {
         return computerPlayer.moveCardToHandWithInfo(card, sourceId, game);
     }
@@ -2137,6 +2118,10 @@ public class TestPlayer implements Player {
 
     @Override
     public boolean scry(int value, Ability source, Game game) {
+        // Don't scry at the start of the game.
+        if (game.getTurnNum() == 1 && game.getStep() == null) {
+            return false;
+        }
         return computerPlayer.scry(value, source, game);
     }
 
@@ -2156,7 +2141,7 @@ public class TestPlayer implements Player {
     }
 
     @Override
-    public boolean moveCards(Set<Card> cards, Zone fromZone, Zone toZone, Ability source, Game game) {
+    public boolean moveCards(Set<Card> cards, Zone toZone, Ability source, Game game) {
         return computerPlayer.moveCards(cards, toZone, source, game);
     }
 

@@ -38,21 +38,19 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import mage.cards.Card;
 import mage.constants.Zone;
 import mage.filter.FilterCard;
 import mage.game.Game;
+import mage.util.RandomUtil;
 
 /**
  *
  * @author BetaSteward_at_googlemail.com
  */
 public class Library implements Serializable {
-
-    private static Random rnd = new Random();
 
     private boolean emptyDraw;
     private final Deque<UUID> library = new ArrayDeque<>();
@@ -76,7 +74,7 @@ public class Library implements Serializable {
     public void shuffle() {
         UUID[] shuffled = library.toArray(new UUID[0]);
         for (int n = shuffled.length - 1; n > 0; n--) {
-            int r = rnd.nextInt(n);
+            int r = RandomUtil.nextInt(n);;
             UUID temp = shuffled[n];
             shuffled[n] = shuffled[r];
             shuffled[r] = temp;

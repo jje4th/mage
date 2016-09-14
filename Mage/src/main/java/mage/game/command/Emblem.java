@@ -38,8 +38,10 @@ import mage.abilities.Ability;
 import mage.abilities.costs.mana.ManaCost;
 import mage.abilities.costs.mana.ManaCosts;
 import mage.abilities.costs.mana.ManaCostsImpl;
+import mage.cards.FrameStyle;
 import mage.constants.CardType;
 import mage.game.Game;
+import mage.game.events.ZoneChangeEvent;
 import mage.util.GameLog;
 
 /**
@@ -55,6 +57,7 @@ public class Emblem implements CommandObject {
     private UUID id;
     private UUID controllerId;
     private UUID sourceId;
+    private FrameStyle frameStyle;
     private Abilities<Ability> abilites = new AbilitiesImpl<>();
     private String expansionSetCodeForImage = null;
 
@@ -65,9 +68,15 @@ public class Emblem implements CommandObject {
     public Emblem(final Emblem emblem) {
         this.id = emblem.id;
         this.name = emblem.name;
+        this.frameStyle = emblem.frameStyle;
         this.controllerId = emblem.controllerId;
         this.sourceId = emblem.sourceId;
         this.abilites = emblem.abilites.copy();
+    }
+
+    @Override
+    public FrameStyle getFrameStyle() {
+        return frameStyle;
     }
 
     @Override
@@ -125,12 +134,12 @@ public class Emblem implements CommandObject {
     }
 
     @Override
-    public List<String> getSubtype() {
+    public List<String> getSubtype(Game game) {
         return emptyList;
     }
 
     @Override
-    public boolean hasSubtype(String subtype) {
+    public boolean hasSubtype(String subtype, Game game) {
         return false;
     }
 
@@ -153,6 +162,11 @@ public class Emblem implements CommandObject {
     public ObjectColor getColor(Game game) {
         return emptyColor;
     }
+    
+    @Override 
+    public ObjectColor getFrameColor(Game game) {
+        return emptyColor;
+    }
 
     @Override
     public ManaCosts<ManaCost> getManaCost() {
@@ -172,6 +186,11 @@ public class Emblem implements CommandObject {
     @Override
     public MageInt getToughness() {
         return MageInt.EmptyMageInt;
+    }
+    
+    @Override
+    public int getStartingLoyalty() {
+        return 0;
     }
 
     @Override
@@ -215,7 +234,7 @@ public class Emblem implements CommandObject {
     }
 
     @Override
-    public void updateZoneChangeCounter(Game game) {
+    public void updateZoneChangeCounter(Game game, ZoneChangeEvent event) {
         throw new UnsupportedOperationException("Unsupported operation");
     }
 

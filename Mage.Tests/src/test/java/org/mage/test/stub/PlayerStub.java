@@ -79,7 +79,6 @@ import mage.target.Target;
 import mage.target.TargetAmount;
 import mage.target.TargetCard;
 import mage.target.common.TargetCardInLibrary;
-import mage.util.MessageToClient;
 
 /**
  *
@@ -594,7 +593,7 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public boolean putInGraveyard(Card card, Game game, boolean fromBattlefield) {
+    public boolean putInGraveyard(Card card, Game game) {
         return false;
     }
 
@@ -849,7 +848,7 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public boolean chooseUse(Outcome outcome, MessageToClient message, Ability source, Game game) {
+    public boolean chooseUse(Outcome outcome, String message, String secondMessage, String trueText, String falseText, Ability source, Game game) {
         return false;
     }
 
@@ -1091,21 +1090,6 @@ public class PlayerStub implements Player {
     @Override
     public UUID getCommanderId() {
         return null;
-    }
-
-    @Override
-    public boolean moveCards(Cards cards, Zone fromZone, Zone toZone, Ability source, Game game) {
-        return false;
-    }
-
-    @Override
-    public boolean moveCards(Card card, Zone fromZone, Zone toZone, Ability source, Game game) {
-        return false;
-    }
-
-    @Override
-    public boolean moveCards(Set<Card> cards, Zone fromZone, Zone toZone, Ability source, Game game) {
-        return false;
     }
 
     @Override

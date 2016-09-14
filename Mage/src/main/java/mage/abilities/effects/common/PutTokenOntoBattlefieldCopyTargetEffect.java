@@ -193,13 +193,13 @@ public class PutTokenOntoBattlefieldCopyTargetEffect extends OneShotEffect {
             token.addAbility(FlyingAbility.getInstance());
         }
         if (tokenPower != Integer.MIN_VALUE) {
-            token.setPower(tokenPower);
+            token.getPower().modifyBaseValue(tokenPower);
         }
         if (tokenToughness != Integer.MIN_VALUE) {
-            token.setToughness(tokenToughness);
+            token.getToughness().modifyBaseValue(tokenToughness);
         }
-        if (additionalSubType != null && !token.getSubtype().contains(additionalSubType)) {
-            token.getSubtype().add(additionalSubType);
+        if (additionalSubType != null && !token.getSubtype(game).contains(additionalSubType)) {
+            token.getSubtype(game).add(additionalSubType);
         }
 
         token.putOntoBattlefield(number, game, source.getSourceId(), playerId == null ? source.getControllerId() : playerId, tapped, attacking, attackedPlayer);

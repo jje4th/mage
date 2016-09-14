@@ -78,7 +78,7 @@ public class CardUtil {
         // Enchantment subtypes
         "Aura", "Curse", "Shrine",
         // Artifact subtypes
-        "Clue", "Equipment", "Fortification", "Contraption",
+        "Clue", "Equipment", "Fortification", "Contraption", "Vehicle",
         // Land subtypes
         "Desert", "Gate", "Lair", "Locus", "Urza's", "Mine", "Power-Plant", "Tower",
         // Planeswalker subtypes
@@ -118,7 +118,7 @@ public class CardUtil {
      * @param card2
      * @return
      */
-    public static boolean shareSubtypes(Card card1, Card card2) {
+    public static boolean shareSubtypes(Card card1, Card card2, Game game) {
 
         if (card1 == null || card2 == null) {
             throw new IllegalArgumentException("Params can't be null");
@@ -126,14 +126,14 @@ public class CardUtil {
 
         if (card1.getCardType().contains(CardType.CREATURE) && card2.getCardType().contains(CardType.CREATURE)) {
             if (card1.getAbilities().contains(ChangelingAbility.getInstance())
-                    || card1.getSubtype().contains(ChangelingAbility.ALL_CREATURE_TYPE)
+                    || card1.getSubtype(game).contains(ChangelingAbility.ALL_CREATURE_TYPE)
                     || card2.getAbilities().contains(ChangelingAbility.getInstance())
-                    || card2.getSubtype().contains(ChangelingAbility.ALL_CREATURE_TYPE)) {
+                    || card2.getSubtype(game).contains(ChangelingAbility.ALL_CREATURE_TYPE)) {
                 return true;
             }
         }
-        for (String subtype : card1.getSubtype()) {
-            if (card2.getSubtype().contains(subtype)) {
+        for (String subtype : card1.getSubtype(game)) {
+            if (card2.getSubtype(game).contains(subtype)) {
                 return true;
             }
         }

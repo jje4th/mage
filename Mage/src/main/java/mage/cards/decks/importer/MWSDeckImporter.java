@@ -34,6 +34,7 @@ import mage.cards.decks.DeckCardLists;
 import mage.cards.repository.CardCriteria;
 import mage.cards.repository.CardInfo;
 import mage.cards.repository.CardRepository;
+import mage.util.RandomUtil;
 
 /**
  *
@@ -43,7 +44,7 @@ public class MWSDeckImporter extends DeckImporter {
 
     @Override
     protected void readLine(String line, DeckCardLists deckList) {
-        if (line.length() == 0 || line.startsWith("//")) {
+        if (line.isEmpty() || line.startsWith("//")) {
             return;
         }
         boolean sideboard = false;
@@ -71,7 +72,7 @@ public class MWSDeckImporter extends DeckImporter {
                 List<CardInfo> cards = null;
                 cards = CardRepository.instance.findCards(criteria);
                 if (!cards.isEmpty()) {
-                    cardInfo = cards.get(new Random().nextInt(cards.size()));
+                    cardInfo = cards.get(RandomUtil.nextInt(cards.size()));
                 }
             } 
             if (cardInfo == null) {

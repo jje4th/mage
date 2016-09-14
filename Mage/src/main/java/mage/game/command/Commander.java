@@ -39,8 +39,10 @@ import mage.abilities.common.CastCommanderAbility;
 import mage.abilities.costs.mana.ManaCost;
 import mage.abilities.costs.mana.ManaCosts;
 import mage.cards.Card;
+import mage.cards.FrameStyle;
 import mage.constants.CardType;
 import mage.game.Game;
+import mage.game.events.ZoneChangeEvent;
 import mage.util.GameLog;
 
 public class Commander implements CommandObject {
@@ -112,18 +114,18 @@ public class Commander implements CommandObject {
     }
 
     @Override
-    public List<String> getSubtype() {
-        return card.getSubtype();
+    public List<String> getSubtype(Game game) {
+        return card.getSubtype(game);
     }
 
     @Override
-    public boolean hasSubtype(String subtype) {
-        return card.hasSubtype(subtype);
+    public boolean hasSubtype(String subtype, Game game) {
+        return card.hasSubtype(subtype, game);
     }
 
     @Override
     public List<String> getSupertype() {
-        return card.getSubtype();
+        return card.getSupertype();
     }
 
     @Override
@@ -144,6 +146,16 @@ public class Commander implements CommandObject {
     public ObjectColor getColor(Game game) {
         return card.getColor(game);
     }
+    
+    @Override
+    public ObjectColor getFrameColor(Game game) {
+        return card.getFrameColor(game);
+    }
+
+    @Override
+    public FrameStyle getFrameStyle() {
+        return card.getFrameStyle();
+    }
 
     @Override
     public ManaCosts<ManaCost> getManaCost() {
@@ -163,6 +175,11 @@ public class Commander implements CommandObject {
     @Override
     public MageInt getToughness() {
         return card.getToughness();
+    }
+    
+    @Override
+    public int getStartingLoyalty() {
+        return card.getStartingLoyalty();
     }
 
     @Override
@@ -198,8 +215,8 @@ public class Commander implements CommandObject {
     }
 
     @Override
-    public void updateZoneChangeCounter(Game game) {
-        card.updateZoneChangeCounter(game);
+    public void updateZoneChangeCounter(Game game, ZoneChangeEvent event) {
+        card.updateZoneChangeCounter(game, event);
     }
 
     @Override

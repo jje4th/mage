@@ -133,8 +133,8 @@ class QuestForTheNihilStoneTriggeredAbility2 extends TriggeredAbilityImpl {
         if (game.getOpponents(controllerId).contains(event.getPlayerId())) {
             Player opponent = game.getPlayer(event.getPlayerId());
             if (opponent != null
-                    && opponent.getHand().size() == 0
-                    && quest.getCounters().getCount(CounterType.QUEST) >= 2) {
+                    && opponent.getHand().isEmpty()
+                    && quest.getCounters(game).getCount(CounterType.QUEST) >= 2) {
                 for (Effect effect : this.getEffects()) {
                     effect.setTargetPointer(new FixedTarget(opponent.getId()));
                     return true;

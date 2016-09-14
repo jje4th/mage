@@ -121,7 +121,7 @@ public class AuraReplacementEffect extends ReplacementEffectImpl {
             }
         }
 
-        game.applyEffects(); // So continuousEffects are removed if previous effect of the same ability did move objects that cuase continuous effects
+        game.applyEffects(); // So continuousEffects are removed if previous effect of the same ability did move objects that cause continuous effects
         Player controllingPlayer = null;
         if (targetId == null) {
             SpellAbility spellAbility = card.getSpellAbility();
@@ -174,8 +174,9 @@ public class AuraReplacementEffect extends ReplacementEffectImpl {
         if (targetCard != null || targetPermanent != null || targetPlayer != null) {
             card = game.getCard(event.getTargetId());
             card.removeFromZone(game, fromZone, sourceId);
-            card.updateZoneChangeCounter(game);
             PermanentCard permanent = new PermanentCard(card, (controllingPlayer == null ? card.getOwnerId() : controllingPlayer.getId()), game);
+            ZoneChangeEvent zoneChangeEvent = new ZoneChangeEvent(permanent, controllerId, fromZone, Zone.BATTLEFIELD);
+            permanent.updateZoneChangeCounter(game, zoneChangeEvent);
             game.getBattlefield().addPermanent(permanent);
             card.setZone(Zone.BATTLEFIELD, game);
             if (permanent.entersBattlefield(event.getSourceId(), game, fromZone, true)) {
@@ -188,7 +189,7 @@ public class AuraReplacementEffect extends ReplacementEffectImpl {
                 }
                 game.applyEffects();
 
-                game.fireEvent(new ZoneChangeEvent(permanent, controllerId, fromZone, Zone.BATTLEFIELD));
+                game.fireEvent(zoneChangeEvent);
                 return true;
             }
 
@@ -206,12 +207,12 @@ public class AuraReplacementEffect extends ReplacementEffectImpl {
         if (((ZoneChangeEvent) event).getToZone().equals(Zone.BATTLEFIELD)
                 && !(((ZoneChangeEvent) event).getFromZone().equals(Zone.STACK))) {
             Card card = game.getCard(event.getTargetId());
-            if (card != null && (card.getCardType().contains(CardType.ENCHANTMENT) && card.hasSubtype("Aura")
+            if (card != null && (card.getCardType().contains(CardType.ENCHANTMENT) && card.hasSubtype("Aura", game)
                     || // in case of transformable enchantments
                     (game.getState().getValue(TransformAbility.VALUE_KEY_ENTER_TRANSFORMED + card.getId()) != null
                     && card.getSecondCardFace() != null
                     && card.getSecondCardFace().getCardType().contains(CardType.ENCHANTMENT)
-                    && card.getSecondCardFace().hasSubtype("Aura")))) {
+                    && card.getSecondCardFace().hasSubtype("Aura", game)))) {
                 return true;
             }
         }

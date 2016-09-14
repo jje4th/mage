@@ -49,6 +49,7 @@ import mage.abilities.costs.mana.ManaCostsImpl;
 import mage.abilities.effects.Effect;
 import mage.abilities.effects.Effects;
 import mage.cards.Card;
+import mage.cards.FrameStyle;
 import mage.constants.AbilityType;
 import mage.constants.AbilityWord;
 import mage.constants.CardType;
@@ -57,6 +58,7 @@ import mage.constants.Zone;
 import mage.constants.ZoneDetail;
 import mage.game.Game;
 import mage.game.events.GameEvent;
+import mage.game.events.ZoneChangeEvent;
 import mage.players.Player;
 import mage.target.Target;
 import mage.target.Targets;
@@ -162,12 +164,12 @@ public class StackAbility extends StackObjImpl implements Ability {
     }
 
     @Override
-    public List<String> getSubtype() {
+    public List<String> getSubtype(Game game) {
         return emptyString;
     }
 
     @Override
-    public boolean hasSubtype(String subtype) {
+    public boolean hasSubtype(String subtype, Game game) {
         return false;
     }
 
@@ -192,6 +194,17 @@ public class StackAbility extends StackObjImpl implements Ability {
     public ObjectColor getColor(Game game) {
         return emptyColor;
     }
+    
+    @Override
+    public ObjectColor getFrameColor(Game game) {
+        return ability.getSourceObject(game).getFrameColor(game);
+    }
+
+    @Override
+    public FrameStyle getFrameStyle() {
+        // Abilities all use the same frame
+        return FrameStyle.M15_NORMAL;
+    }
 
     @Override
     public ManaCosts<ManaCost> getManaCost() {
@@ -206,6 +219,11 @@ public class StackAbility extends StackObjImpl implements Ability {
     @Override
     public MageInt getToughness() {
         return MageInt.EmptyMageInt;
+    }
+    
+    @Override
+    public int getStartingLoyalty() {
+        return 0;
     }
 
     @Override
@@ -540,7 +558,7 @@ public class StackAbility extends StackObjImpl implements Ability {
     }
 
     @Override
-    public void updateZoneChangeCounter(Game game) {
+    public void updateZoneChangeCounter(Game game, ZoneChangeEvent event) {
         throw new UnsupportedOperationException("Not supported.");
     }
 

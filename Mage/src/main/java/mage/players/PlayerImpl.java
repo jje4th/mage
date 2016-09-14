@@ -107,10 +107,7 @@ import mage.filter.common.FilterCreatureForCombat;
 import mage.filter.common.FilterCreatureForCombatBlock;
 import mage.filter.predicate.Predicates;
 import mage.filter.predicate.permanent.PermanentIdPredicate;
-import mage.game.ExileZone;
-import mage.game.Game;
-import mage.game.Graveyard;
-import mage.game.Table;
+import mage.game.*;
 import mage.game.combat.CombatGroup;
 import mage.game.command.CommandObject;
 import mage.game.events.DamagePlayerEvent;
@@ -135,13 +132,13 @@ import mage.target.common.TargetCardInLibrary;
 import mage.target.common.TargetDiscard;
 import mage.util.CardUtil;
 import mage.util.GameLog;
+import mage.util.RandomUtil;
 import org.apache.log4j.Logger;
 
 public abstract class PlayerImpl implements Player, Serializable {
 
     private static final Logger logger = Logger.getLogger(PlayerImpl.class);
 
-    private static Random rnd = new Random();
     private static SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
 
     /**
@@ -853,11 +850,11 @@ public abstract class PlayerImpl implements Player, Serializable {
     }
 
     @Override
-    public boolean putInGraveyard(Card card, Game game, boolean fromBattlefield) {
+    public boolean putInGraveyard(Card card, Game game) {
         if (card.getOwnerId().equals(playerId)) {
             this.graveyard.add(card);
         } else {
-            return game.getPlayer(card.getOwnerId()).putInGraveyard(card, game, fromBattlefield);
+            return game.getPlayer(card.getOwnerId()).putInGraveyard(card, game);
         }
         return true;
     }
@@ -1838,19 +1835,30 @@ public abstract class PlayerImpl implements Player, Serializable {
 
     @Override
     public boolean addCounters(Counter counter, Game game) {
-        boolean returnState = true;
-        int amount = counter.getCount();
-        for (int i = 0; i < amount; i++) {
-            Counter eventCounter = counter.copy();
-            eventCounter.remove(amount - 1);
-            if (!game.replaceEvent(GameEvent.getEvent(GameEvent.EventType.ADD_COUNTER, playerId, playerId, counter.getName(), counter.getCount()))) {
-                counters.addCounter(eventCounter);
-                game.fireEvent(GameEvent.getEvent(EventType.COUNTER_ADDED, playerId, playerId, counter.getName(), counter.getCount()));
-            } else {
-                returnState = false;
+        boolean returnCode = true;
+        GameEvent countersEvent = GameEvent.getEvent(EventType.ADD_COUNTERS, playerId, playerId, counter.getName(), counter.getCount());
+        if (!game.replaceEvent(countersEvent)) {
+            int amount = countersEvent.getAmount();
+            int finalAmount = amount;
+            for (int i = 0; i < amount; i++) {
+                Counter eventCounter = counter.copy();
+                eventCounter.remove(amount - 1);
+                GameEvent event = GameEvent.getEvent(EventType.ADD_COUNTER, playerId, playerId, counter.getName(), 1);
+                if (!game.replaceEvent(event)) {
+                    getCounters().addCounter(eventCounter);
+                    game.fireEvent(GameEvent.getEvent(EventType.COUNTER_ADDED, playerId, playerId, counter.getName(), 1));
+                } else {
+                    finalAmount--;
+                    returnCode = false;
+                }
             }
+            if(finalAmount > 0) {
+                game.fireEvent(GameEvent.getEvent(EventType.COUNTERS_ADDED, playerId, playerId, counter.getName(), amount));
+            }
+        } else {
+            returnCode = false;
         }
-        return returnState;
+        return returnCode;
     }
 
     @Override
@@ -2318,7 +2326,7 @@ public abstract class PlayerImpl implements Player, Serializable {
      */
     @Override
     public boolean flipCoin(Game game, ArrayList<UUID> appliedEffects) {
-        boolean result = rnd.nextBoolean();
+        boolean result = RandomUtil.nextBoolean();
         if (!game.isSimulation()) {
             game.informPlayers("[Flip a coin] " + getLogName() + (result ? " won (head)." : " lost (tail)."));
         }
@@ -2528,7 +2536,7 @@ public abstract class PlayerImpl implements Player, Serializable {
                                 }
                             }
 
-                            if (manaCosts.size() == 0) {
+                            if (manaCosts.isEmpty()) {
                                 return true;
                             } else {
                                 if (available == null) {
@@ -2559,7 +2567,7 @@ public abstract class PlayerImpl implements Player, Serializable {
                                 }
                             }
 
-                            if (manaCosts.size() == 0) {
+                            if (manaCosts.isEmpty()) {
                                 return true;
                             } else {
                                 for (Mana mana : manaCosts.getOptions()) {
@@ -2596,7 +2604,7 @@ public abstract class PlayerImpl implements Player, Serializable {
                         }
                     }
 
-                    if (manaCosts.size() == 0) {
+                    if (manaCosts.isEmpty()) {
                         return true;
                     } else {
                         for (Mana mana : manaCosts.getOptions()) {
@@ -2758,7 +2766,6 @@ public abstract class PlayerImpl implements Player, Serializable {
      * Used to mark the playable cards in GameView
      *
      * @return A Set of cardIds that are playable
-     * @see mage.server.GameSessionPlayer#getGameView()
      *
      * @param game
      *
@@ -3106,55 +3113,6 @@ public abstract class PlayerImpl implements Player, Serializable {
     }
 
     @Override
-    public boolean moveCards(Cards cards, Zone fromZone, Zone toZone, Ability source, Game game) {
-        if (cards.isEmpty()) {
-            return true;
-        }
-        Set<Card> cardList = new HashSet<>();
-        for (UUID cardId : cards) {
-            fromZone = game.getState().getZone(cardId);
-            if (Zone.BATTLEFIELD.equals(fromZone)) {
-                Permanent permanent = game.getPermanent(cardId);
-                if (permanent != null) {
-                    cardList.add(permanent);
-                }
-            } else {
-                Card card = game.getCard(cardId);
-                if (card == null) {
-                    Spell spell = game.getState().getStack().getSpell(cardId);
-                    if (spell != null) {
-                        if (!spell.isCopy()) {
-                            card = spell.getCard();
-                        } else {
-                            // If a spell is returned to its owner's hand, it's removed from the stack and thus will not resolve
-                            game.getStack().remove(spell);
-                            game.informPlayers(spell.getLogName() + " was removed from the stack");
-                        }
-                    }
-                }
-                if (card != null) {
-                    cardList.add(card);
-                }
-            }
-        }
-        return moveCards(cardList, toZone, source, game);
-    }
-
-    @Override
-    public boolean moveCards(Card card, Zone fromZone, Zone toZone, Ability source, Game game) {
-        Set<Card> cardList = new HashSet<>();
-        if (card != null) {
-            cardList.add(card);
-        }
-        return moveCards(cardList, toZone, source, game);
-    }
-
-    @Override
-    public boolean moveCards(Set<Card> cards, Zone fromZone, Zone toZone, Ability source, Game game) {
-        return moveCards(cards, toZone, source, game);
-    }
-
-    @Override
     public boolean moveCards(Card card, Zone toZone, Ability source, Game game) {
         return moveCards(card, toZone, source, game, false, false, false, null);
     }
@@ -3191,86 +3149,23 @@ public abstract class PlayerImpl implements Player, Serializable {
                 successfulMovedCards = moveCardsToGraveyardWithInfo(cards, source, game, fromZone);
                 return successfulMovedCards.size() > 0;
             case BATTLEFIELD: // new logic that does not yet add the permanents to battlefield while replacement effects are handled
-                List<Permanent> permanents = new ArrayList<>();
-                List<Permanent> permanentsEntered = new ArrayList<>();
-                // Move meld pieces instead of the meld card if unmelded
-                Set<Card> meldPiecesToAdd = new HashSet<>(0);
-                Set<MeldCard> meldCardsRemoved = new HashSet<>(0);
-                for (Iterator<Card> it = cards.iterator(); it.hasNext();) {
-                    Card card = it.next();
-                    if (card instanceof MeldCard && !((MeldCard) card).isMelded()) {
-                        MeldCard meldCard = (MeldCard) card;
-                        if (meldCard.getTopLastZoneChangeCounter() == meldCard.getTopHalfCard().getZoneChangeCounter(game)) {
-                            meldPiecesToAdd.add(meldCard.getTopHalfCard());
-                        }
-                        if (meldCard.getBottomLastZoneChangeCounter() == meldCard.getBottomHalfCard().getZoneChangeCounter(game)) {
-                            meldPiecesToAdd.add(meldCard.getBottomHalfCard());
-                        }
-                        meldCardsRemoved.add(meldCard);
-                        it.remove();
-                    }
-                }
-                cards.addAll(meldPiecesToAdd);
+                List<ZoneChangeInfo> infoList = new ArrayList<ZoneChangeInfo>();
                 for (Card card : cards) {
-                    UUID controllingPlayerId = byOwner ? card.getOwnerId() : getId();
                     fromZone = game.getState().getZone(card.getId());
-                    if (faceDown) {
-                        card.setFaceDown(true, game);
-                    }
-                    ZoneChangeEvent event = new ZoneChangeEvent(card.getId(), source.getSourceId(), controllingPlayerId, fromZone, Zone.BATTLEFIELD, appliedEffects, tapped);
-                    if (!game.replaceEvent(event)) {
-                        // get permanent
-                        Permanent permanent;
-                        if (card instanceof MeldCard) {
-                            permanent = new PermanentMeld(card, event.getPlayerId(), game);// controlling player can be replaced so use event player now
-                        } else {
-                            permanent = new PermanentCard(card, event.getPlayerId(), game);// controlling player can be replaced so use event player now
-                        }
-                        permanents.add(permanent);
-                        game.getPermanentsEntering().put(permanent.getId(), permanent);
-                        card.checkForCountersToAdd(permanent, game);
-                        permanent.setTapped(tapped);
-                        permanent.setFaceDown(faceDown, game);
-                    }
-                    if (faceDown) {
-                        card.setFaceDown(false, game);
-                    }
+                    ZoneChangeEvent event = new ZoneChangeEvent(card.getId(), source.getSourceId(), byOwner ? card.getOwnerId() : getId(), fromZone, Zone.BATTLEFIELD, appliedEffects);
+                    infoList.add(new ZoneChangeInfo.Battlefield(event, faceDown, tapped));
                 }
-                game.setScopeRelevant(true);
-                for (Permanent permanent : permanents) {
-                    fromZone = game.getState().getZone(permanent.getId());
-                    // make sure the controller of all continuous effects of this card are switched to the current controller
-                    game.getContinuousEffects().setController(permanent.getId(), permanent.getControllerId());
-                    if (permanent.entersBattlefield(source.getSourceId(), game, fromZone, true)) {
-                        permanentsEntered.add(permanent);
-                    } else {
-                        // revert controller to owner if permanent does not enter
-                        game.getContinuousEffects().setController(permanent.getId(), permanent.getOwnerId());
-                        game.getPermanentsEntering().remove(permanent.getId());
-                    }
-                }
-                game.setScopeRelevant(false);
-                for (Permanent permanent : permanentsEntered) {
-                    fromZone = game.getState().getZone(permanent.getId());
-                    if (((Card) permanent).removeFromZone(game, fromZone, source.getSourceId())) {
-                        permanent.updateZoneChangeCounter(game);
-                        game.addPermanent(permanent);
-                        permanent.setZone(Zone.BATTLEFIELD, game);
-                        game.getPermanentsEntering().remove(permanent.getId());
+                infoList = ZonesHandler.moveCards(infoList, game);
+                for (ZoneChangeInfo info : infoList) {
+                    Permanent permanent = game.getPermanent(info.event.getTargetId());
+                    if (permanent != null) {
                         successfulMovedCards.add(permanent);
-                        game.addSimultaneousEvent(new ZoneChangeEvent(permanent, permanent.getControllerId(), fromZone, Zone.BATTLEFIELD));
                         if (!game.isSimulation()) {
-                            game.informPlayers(this.getLogName() + " puts " + (faceDown ? "a card face down " : permanent.getLogName())
-                                    + " from " + fromZone.toString().toLowerCase(Locale.ENGLISH) + " onto the Battlefield");
+                            game.informPlayers(game.getPlayer(info.event.getPlayerId()) + " puts " +
+                                    (info.faceDown ? "a card face down " : permanent.getLogName()) + " from " +
+                                    fromZone.toString().toLowerCase(Locale.ENGLISH) + " onto the Battlefield");
                         }
-                    } else {
-                        game.getPermanentsEntering().remove(permanent.getId());
                     }
-                }
-                // Update the lastZoneChangeCounter of meld pieces that were moved
-                for (MeldCard meldCard : meldCardsRemoved) {
-                    meldCard.setTopLastZoneChangeCounter(meldCard.getTopHalfCard().getZoneChangeCounter(game));
-                    meldCard.setBottomLastZoneChangeCounter(meldCard.getBottomHalfCard().getZoneChangeCounter(game));
                 }
                 game.applyEffects();
                 break;

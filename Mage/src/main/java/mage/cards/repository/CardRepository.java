@@ -48,6 +48,7 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import mage.constants.CardType;
 import mage.constants.SetType;
+import mage.util.RandomUtil;
 import org.apache.log4j.Logger;
 
 /**
@@ -61,17 +62,16 @@ public enum CardRepository {
     private static final String JDBC_URL = "jdbc:h2:file:./db/cards.h2;AUTO_SERVER=TRUE";
     private static final String VERSION_ENTITY_NAME = "card";
     // raise this if db structure was changed
-    private static final long CARD_DB_VERSION = 44;
+    private static final long CARD_DB_VERSION = 47;
     // raise this if new cards were added to the server
-    private static final long CARD_CONTENT_VERSION = 55;
+    private static final long CARD_CONTENT_VERSION = 59;
 
-    private final Random random = new Random();
     private Dao<CardInfo, Object> cardDao;
     private Set<String> classNames;
 
     private final TreeSet<String> landTypes = new TreeSet();
 
-    private CardRepository() {
+    CardRepository() {
         File file = new File("db");
         if (!file.exists()) {
             file.mkdirs();
@@ -317,7 +317,7 @@ public enum CardRepository {
     public CardInfo findCard(String name) {
         List<CardInfo> cards = findCards(name);
         if (!cards.isEmpty()) {
-            return cards.get(random.nextInt(cards.size()));
+            return cards.get(RandomUtil.nextInt(cards.size()));
         }
         return null;
     }

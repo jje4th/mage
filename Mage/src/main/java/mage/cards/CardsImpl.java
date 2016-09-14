@@ -36,11 +36,11 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import mage.filter.FilterCard;
 import mage.game.Game;
+import mage.util.RandomUtil;
 import mage.util.ThreadLocalStringBuilder;
 
 /**
@@ -51,7 +51,6 @@ public class CardsImpl extends LinkedHashSet<UUID> implements Cards, Serializabl
 
     private static final ThreadLocalStringBuilder threadLocalBuilder = new ThreadLocalStringBuilder(200);
 
-    private static Random rnd = new Random();
     private UUID ownerId;
 
     public CardsImpl() {
@@ -110,11 +109,11 @@ public class CardsImpl extends LinkedHashSet<UUID> implements Cards, Serializabl
 
     @Override
     public Card getRandom(Game game) {
-        if (this.size() == 0) {
+        if (this.isEmpty()) {
             return null;
         }
         UUID[] cards = this.toArray(new UUID[this.size()]);
-        return game.getCard(cards[rnd.nextInt(cards.length)]);
+        return game.getCard(cards[RandomUtil.nextInt(cards.length)]);
     }
 
     @Override
@@ -183,9 +182,13 @@ public class CardsImpl extends LinkedHashSet<UUID> implements Cards, Serializabl
     @Override
     public Set<Card> getCards(Game game) {
         Set<Card> cards = new LinkedHashSet<>();
-        for (Iterator<UUID> it = this.iterator(); it.hasNext();) { // Changed to iterator becuase of ConcurrentModificationException
+        for (Iterator<UUID> it = this.iterator(); it.hasNext();) { // Changed to iterator because of ConcurrentModificationException
             UUID cardId = it.next();
+
             Card card = game.getCard(cardId);
+            if (card == null) {
+                card = game.getPermanent(cardId); // needed to get TokenCard objects
+            }
             if (card != null) { // this can happen during the cancelation (player concedes) of a game
                 cards.add(card);
             }

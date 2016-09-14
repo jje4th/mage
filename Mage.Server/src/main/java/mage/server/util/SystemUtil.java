@@ -6,6 +6,7 @@ import mage.cards.repository.CardRepository;
 import mage.constants.Zone;
 import mage.game.Game;
 import mage.players.Player;
+import mage.util.RandomUtil;
 
 import java.io.File;
 import java.util.Date;
@@ -54,7 +55,7 @@ public class SystemUtil {
             try {
                 while (scanner.hasNextLine()) {
                     String line = scanner.nextLine().trim();
-                    if (line.trim().length() == 0 || line.startsWith("#")) {
+                    if (line.trim().isEmpty() || line.startsWith("#")) {
                         continue;
                     }
 
@@ -95,10 +96,9 @@ public class SystemUtil {
                         continue;
                     }
 
-                    Random random = new Random();
                     Set<Card> cardsToLoad = new HashSet<>();
                     for (int i = 0; i < amount; i++) {
-                        CardInfo cardInfo = cards.get(random.nextInt(cards.size()));
+                        CardInfo cardInfo = cards.get(RandomUtil.nextInt(cards.size()));
                         Card card = cardInfo != null ? cardInfo.getCard() : null;
                         if (card != null) {
                             cardsToLoad.add(card);
@@ -125,8 +125,11 @@ public class SystemUtil {
      * @param card Card to put to player's hand
      */
     private static void swapWithAnyCard(Game game, Player player, Card card, Zone zone) {
+        // Put the card in Exile to start. Otherwise the game doesn't know where to remove the card from.
+        game.getExile().getPermanentExile().add(card);
+        game.setZone(card.getId(), Zone.EXILED);
         if (zone.equals(Zone.BATTLEFIELD)) {
-            card.putOntoBattlefield(game, Zone.OUTSIDE, null, player.getId());
+            card.putOntoBattlefield(game, Zone.EXILED, null, player.getId());
         } else if (zone.equals(Zone.LIBRARY)) {
             card.setZone(Zone.LIBRARY, game);
             player.getLibrary().putOnTop(card, game);
